@@ -8,203 +8,132 @@ from ultralytics import YOLO
 config = {
     'max_servo_angle': [160, 150, 180],
     'min_servo_angle': [10, 50, 50],
-    'servo_angle': [90, 90, 168],
+    'servo_angle': [90, 90, 150],
     'servo_step': [2, 2, 2],
     'depth': 0.5,
-    'lenght_arm_1': 50,
-    'lenght_arm_2': 50,
+    'lenght_arm_1': 45,
+    'lenght_arm_2': 45,
     'x_treshold': 5,
     'y_treshold': 5,
     'COM': 'COM4',
     'BAUDRATE': 115200,
     'video_port': 0,
-    'state': 'scan', # berisi = scan, pickup_rubbish, send_trash_to_bin
-    'trashes': ['remote', 'remote'], # masukkan sampah yang akan dibuang
+    'state': 'scan',
+    'trashes': ['remote', 'remote'],
     'scanning_state': 'left',
     'max_area_to_send_to_bin': 19932,
     'servo_angle_trash_to_bin': [90, 90, 168],
     'max_distance_sensor': 40,
-    'motor_speed_at_case_1': [254, 250, 230, 250],
-    'motor_speed_at_case_2': [254, 254, 250, 250],
-    'motor_speed_at_case_3': [120, 120, 120, 120],
-    'motor_speed_at_case_4': [120, 120, 120, 120],
-    'motor_speed_at_stop': [0, 0, 0, 0],
-    'robot_forward_direction' : [1, 1, 1, 1],
-    'robot_backward_direction' : [0, 0, 0, 0],
-    'robot_left_direction' : [1, 0, 1, 0],
-    'robot_right_direction' : [0, 1, 0, 1],
+    'connect_serial': False,
+    'robot_speed': {
+        'forward': [120, 120, 120, 120],
+        'backward': [254, 250, 254, 250],
+        'left': [120, 120, 120, 120],
+        'right': [120, 120, 120, 120],
+        'stop': [0, 0, 0, 0],
+        'case_1': [0, 0, 0, 0],
+    },
+    'robot_direction': {
+        'forward': [1, 1, 1, 1],
+        'backward': [0, 0, 0, 0],
+        'left': [1, 0, 1, 0],
+        'right': [0, 1, 0, 1]
+    },
     'pick': 1,
 }
 
-# melakukan inisiasi variabel yang akan digunakan
+# melakukan inisiasi variabel yang akan digunakan (tidak perlu dirubah)
 command = ''
-
 ser = None
 start_time = None
 
-# serial connect
 def connect_serial():
-    ser = serial.Serial(config['COM'], config['BAUDRATE'])
-    return ser
+    return serial.Serial(config['COM'], config['BAUDRATE'])
 
-# robot turn left
+def build_command(direction, speed):
+    command = str(config['servo_angle'][0])
+    command += '.' + str(config['servo_angle'][1])
+    command += '.' + str(config['servo_angle'][2])
+    command += '.' + str(config['robot_direction'][direction][0])
+    command += '.' + str(config['robot_speed'][speed][0])
+    command += '.' + str(config['robot_direction'][direction][1])
+    command += '.' + str(config['robot_speed'][speed][1])
+    command += '.' + str(config['robot_direction'][direction][2])
+    command += '.' + str(config['robot_speed'][speed][2])
+    command += '.' + str(config['robot_direction'][direction][3])
+    command += '.' + str(config['robot_speed'][speed][3])
+    command += '.' + str(config['pick']) + '\n'
+    
+    return command
+
+def send_command(command):
+    ser.write(command.encode('utf-8'))
+
 def robot_forward():
-    command = str(config['servo_angle'][0])
-    command += '.' + str(config['servo_angle'][1])
-    command += '.' + str(config['servo_angle'][2])
-    command += '.' + str(config['robot_forward_direction'][0])
-    command += '.' + str(config['motor_speed_at_case_1'][0])
-    command += '.' + str(config['robot_forward_direction'][1])
-    command += '.' + str(config['motor_speed_at_case_1'][1])
-    command += '.' + str(config['robot_forward_direction'][2])
-    command += '.' + str(config['motor_speed_at_case_1'][2])
-    command += '.' + str(config['robot_forward_direction'][3])
-    command += '.' + str(config['motor_speed_at_case_1'][3])
-    command += '.' + str(config['pick']) + '\n'
+    return build_command('forward', 'forward')
 
-    ser.write(command.encode('utf-8'))
+def robot_backward():
+    return build_command('backward', 'backward')
 
-# robot turn right
-def robot_turn_right():
-    command = str(config['servo_angle'][0])
-    command += '.' + str(config['servo_angle'][1])
-    command += '.' + str(config['servo_angle'][2])
-    command += '.' + str(config['robot_right_direction'][0])
-    command += '.' + str(config['motor_speed_at_case_2'][0])
-    command += '.' + str(config['robot_right_direction'][1])
-    command += '.' + str(config['motor_speed_at_case_2'][1])
-    command += '.' + str(config['robot_right_direction'][2])
-    command += '.' + str(config['motor_speed_at_case_2'][2])
-    command += '.' + str(config['robot_right_direction'][3])
-    command += '.' + str(config['motor_speed_at_case_2'][3])
-    command += '.' + str(config['pick']) + '\n'
-
-    ser.write(command.encode('utf-8'))
-
-# robot turn left
 def robot_turn_left():
-    command = str(config['servo_angle'][0])
-    command += '.' + str(config['servo_angle'][1])
-    command += '.' + str(config['servo_angle'][2])
-    command += '.' + str(config['robot_left_direction'][0])
-    command += '.' + str(config['motor_speed_at_case_3'][0])
-    command += '.' + str(config['robot_left_direction'][1])
-    command += '.' + str(config['motor_speed_at_case_3'][1])
-    command += '.' + str(config['robot_left_direction'][2])
-    command += '.' + str(config['motor_speed_at_case_3'][2])
-    command += '.' + str(config['robot_left_direction'][3])
-    command += '.' + str(config['motor_speed_at_case_3'][3])
-    command += '.' + str(config['pick']) + '\n'
+    return build_command('left', 'left')
 
-    ser.write(command.encode('utf-8'))
+def robot_turn_right():
+    return build_command('right', 'right')
 
-# robot stop
 def robot_stop():
-    command = str(config['servo_angle'][0])
-    command += '.' + str(config['servo_angle'][1])
-    command += '.' + str(config['servo_angle'][2])
-    command += '.' + str(config['robot_forward_direction'][0])
-    command += '.' + str(config['motor_speed_at_stop'][0])
-    command += '.' + str(config['robot_forward_direction'][1])
-    command += '.' + str(config['motor_speed_at_stop'][1])
-    command += '.' + str(config['robot_forward_direction'][2])
-    command += '.' + str(config['motor_speed_at_stop'][2])
-    command += '.' + str(config['robot_forward_direction'][3])
-    command += '.' + str(config['motor_speed_at_stop'][3])
-    command += '.' + str(config['pick']) + '\n'
-
-    ser.write(command.encode('utf-8'))
+    return build_command('forward', 'stop')
 
 def move_servo_v2(x, y, z):
-    b = math.atan2(y, x) * (180 / math.pi)
+    b = math.degrees(math.atan2(y, x))
     l = math.sqrt(x*x + y*y)
     h = math.sqrt(l*l + z*z)
-    phi = math.atan(z / l) * (180 / math.pi)
-    theta = math.acos(h / (2 * 75)) * (180 / math.pi)
-    
-    a1 = phi + theta
-    a2 = phi - theta
+    phi = math.degrees(math.atan(z / l))
+    theta = math.degrees(math.acos(h / (2 * 75)))
+    a1, a2 = phi + theta, phi - theta
 
-    command = str(b)
-    command += '.' + str(a1)
-    command += '.' + str(a2)
-    command += '.' + str(config['robot_forward_direction'][0])
-    command += '.' + str(config['motor_speed_at_case_1'][0])
-    command += '.' + str(config['robot_forward_direction'][1])
-    command += '.' + str(config['motor_speed_at_case_1'][1])
-    command += '.' + str(config['robot_forward_direction'][2])
-    command += '.' + str(config['motor_speed_at_case_1'][2])
-    command += '.' + str(config['robot_forward_direction'][3])
-    command += '.' + str(config['motor_speed_at_case_1'][3])
-    command += '.' + str(config['pick']) + '\n'
-
+    command = f"{b}.{a1}.{a2}." + '.'.join(map(str, config['robot_direction']['forward'] + config['motor_speed']['forward'] + [config['pick']])) + '\n'
     ser.write(command.encode('utf-8'))
 
-    
+def servo_move_to_axes(x, y, l1=config['lenght_arm_1'], l2=config['lenght_arm_2']):
+    r = math.sqrt(x**2 + y**2)
+    if r > (l1 + l2) or r < abs(l1 - l2):
+        return None, None
 
-    # move_to_angle(b, a1, a2)
+    cos_theta2 = (x**2 + y**2 - l1**2 - l2**2) / (2 * l1 * l2)
+    theta2 = math.acos(cos_theta2)
+    k1, k2 = l1 + l2 * math.cos(theta2), l2 * math.sin(theta2)
+    theta1 = math.degrees(math.atan2(y, x) - math.atan2(k2, k1))
+    theta2_deg = abs(abs(int(180 - math.degrees(theta2)))) + 60
 
-def move_servo(x, y, z=None, a1=50, a2=50):
-    cos_q2 = (x**2 + y**2 - a1**2 - a2**2) / (2 * a1 * a2)
-    cos_q2 = max(min(cos_q2, 1), -1)
-    q2 = math.acos(cos_q2)
-
-    q1 = math.atan2(y, x) - math.atan2(a2 * math.sin(q2), a1 + a2 * math.cos(q2))
-
-    q1_deg = math.degrees(q1)
-    q2_deg = math.degrees(q2)
-
-
-    if (q1_deg >= config['max_servo_angle'][1]):
-        q1_deg == config['max_servo_angle'][1]
-
-    if (q1_deg <= config['min_servo_angle'][1]):
-        q1_deg == config['min_servo_angle'][1]
-
-    if (q2_deg >= config['max_servo_angle'][2]):
-        q2_deg == config['max_servo_angle'][2]
-
-    if (q2_deg >= config['min_servo_angle'][2]):
-        q2_deg == config['min_servo_angle'][2]
-
-    command = str(config['servo_angle'][0])
-    command += '.' + str(q1_deg)
-    command += '.' + str(q2_deg)
-    command += '.' + str(config['robot_forward_direction'][0])
-    command += '.' + str(config['motor_speed_at_stop'][0])
-    command += '.' + str(config['robot_forward_direction'][1])
-    command += '.' + str(config['motor_speed_at_stop'][1])
-    command += '.' + str(config['robot_forward_direction'][2])
-    command += '.' + str(config['motor_speed_at_stop'][2])
-    command += '.' + str(config['robot_forward_direction'][3])
-    command += '.' + str(config['motor_speed_at_stop'][3])
-    command += '.' + str(config['pick']) + '\n'
-
+    command = f"{config['servo_angle'][0]}.{abs(int(180 - theta1))}.{theta2_deg}." + '.'.join(map(str, config['robot_direction']['forward'] + config['motor_speed']['forward'] + [config['pick']])) + '\n'
     ser.write(command.encode('utf-8'))
-    
-    return q1_deg, q2_deg
 
 if __name__ == '__main__':
-    ser = connect_serial()
+    if config['connect_serial']:
+        ser = connect_serial()
+        time.sleep(2)
+    print("start")
 
+    command = robot_turn_left()
+    if config['connect_serial']:
+        send_command(command)
+    print('left ', command)
+    time.sleep(1)
+
+    command = robot_forward()
+    if config['connect_serial']:
+        send_command(command)
+    print('forward', command)
     time.sleep(2)
 
-    start_time = time.time()
+    command = robot_backward()
+    if config['connect_serial']:
+        send_command(command)
+    print('backward', command)
+    time.sleep(2)
 
-    robot_forward()
-
-    time.sleep(4)
-    
-    robot_turn_left()
-
-    time.sleep(4)
-
-    robot_turn_right()
-
-    time.sleep(4)
-
-    robot_stop()
-
-    time.sleep(4)
-
-    move_servo(x=40, y=50, z=90)
+    command = robot_stop()
+    if config['connect_serial']:
+        send_command(command)
+    print('stop', command)
