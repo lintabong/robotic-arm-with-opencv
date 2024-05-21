@@ -3,7 +3,7 @@ import time
 import random
 
 def run():
-    ser = serial.Serial('COM8', 115200)
+    ser = serial.Serial('COM7', 115200)
     time.sleep(2)
 
     try:

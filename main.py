@@ -21,6 +21,7 @@ config = {
     'scanning_state': 'left',
     'max_area_to_send_to_bin': 19932,
     'servo_angle_trash_to_bin': [90, 90, 168, 90, 90],
+    'max_distance_sensor': 40
 }
 
 classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
@@ -74,6 +75,11 @@ def main():
         results = model(img, stream=True, verbose=False)
 
         # logic untuk scan sampah
+        if config['state'] == 'scan_by_wheel':
+            ser.write("22.22.22.22.22.right.124\n".encode())
+
+            time.sleep(2)
+
         if config['state'] == 'scan':
             if config['scanning_state'] == 'left':
                 config['servo_angle'][0] += config['servo_step'][0]
