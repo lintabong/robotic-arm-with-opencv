@@ -243,6 +243,7 @@ if __name__ == '__main__':
     print('connect camera')
     time.sleep(1)
 
+    # clear history
     history = []
 
     for trash in config['trashes']:
