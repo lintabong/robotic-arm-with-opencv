@@ -25,7 +25,7 @@ config = {
     'table_approaching_time': 1, # per 0.05 second
     'max_area_to_send_to_bin': 19932,
     'max_distance_sensor': 40,
-    'connect_serial': False,
+    'connect_serial': True,
     'robot_speed': {
         'forward': [120, 120, 120, 120],
         'backward': [254, 250, 254, 250],
@@ -50,6 +50,7 @@ cap = None
 model = YOLO('yolo-Weights/yolov8n.pt', verbose=False)
 start_time = None
 history = []
+history_state = []
 
 classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
               "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
@@ -152,14 +153,50 @@ def servo_move_by_angle(tetha1, tetha2):
 
     return command
 
-def logging(command):
+def logging(command, his=True):
     global history
     command = command.replace('\n', '')
-    history.append(command)
     print('    ', command)
+    if his:
+        history.append(command)
 
 
 def test_servo_square():
+    servo_angle_1 = config['servo_angle'][1]
+    servo_angle_2 = config['servo_angle'][2]
+
+    x = 20
+    y = 4
+
+    command = servo_move_to_axes(x, y)
+    
+    last_servo_angle = command.split('.')
+    last_servo_angle_1 = int(last_servo_angle[1])
+    last_servo_angle_2 = int(last_servo_angle[2])
+
+    print('initial condition', servo_angle_1, last_servo_angle_1, servo_angle_2, last_servo_angle_2)
+
+    while True:
+        if servo_angle_1 < last_servo_angle_1:
+            servo_angle_1 += 1
+
+        if servo_angle_1 > last_servo_angle_1:
+            servo_angle_1 -= 1
+
+        if servo_angle_2 < last_servo_angle_2:
+            servo_angle_2 += 1
+
+        if servo_angle_2 > last_servo_angle_2:
+            servo_angle_2 -= 1
+
+        command = servo_move_by_angle(servo_angle_1, servo_angle_2)
+        send_command(command)
+        logging(command, False)
+
+        time.sleep(0.3)
+
+        if servo_angle_1 == last_servo_angle_1 and servo_angle_2 == last_servo_angle_2:
+            break
     y = 4
     for x in range(20, 60):
         command = servo_move_to_axes(x, y)
@@ -213,8 +250,7 @@ if __name__ == '__main__':
 
     # test servo square
     # print('test servo square')
-    # while True:
-    #     test_servo_square()
+    # test_servo_square()
 
     # LANGKAH KE-3
     # setting sudut awal ke posisi scan dengan iterasi sebesar 1 derajat
@@ -244,6 +280,9 @@ if __name__ == '__main__':
         if servo_angle_2 >= last_servo_angle_2:
             servo_angle_2 -= 1
 
+        command = servo_move_by_angle(servo_angle_1, servo_angle_2)
+        send_command(command)
+
         time.sleep(0.3)
 
         if servo_angle_1 == last_servo_angle_1 and servo_angle_2 == last_servo_angle_2:
@@ -264,7 +303,7 @@ if __name__ == '__main__':
 
         command = robot_stop()
         send_command(command)
-        logging(command)
+        logging(command, False)
 
         state = 'scan'
         area = 0
@@ -273,7 +312,7 @@ if __name__ == '__main__':
 
         command = servo_move_to_axes(x_cam, z_cam)
         send_command(command)
-        logging(command)
+        logging(command, False)
 
         # proses scanning sampah
         print('    scanning')
