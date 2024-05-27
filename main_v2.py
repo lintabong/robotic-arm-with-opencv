@@ -5,6 +5,13 @@ import serial
 from ultralytics import YOLO
 
 ### CONFIGURATION
+import cv2
+import time
+import math
+import serial
+from ultralytics import YOLO
+
+### CONFIGURATION
 config = {
     'max_servo_angle': [90, 140, 150],
     'min_servo_angle': [90, 80, 100],
@@ -27,12 +34,14 @@ config = {
     'max_distance_sensor': 40,
     'connect_serial': True,
     'robot_speed': {
-        'forward': [120, 120, 120, 120],
-        'backward': [254, 250, 254, 250],
+        'forward': [150, 175, 200, 100],
+        'backward': [160, 140, 95, 100],
         'left': [120, 120, 120, 120],
         'right': [120, 120, 120, 120],
         'stop': [0, 0, 0, 0],
         'case_1': [0, 0, 0, 0],
+        'forward_scan': [150, 175, 200, 100],
+        'backward_scan': [160, 140, 95, 100],
     },
     'robot_direction': {
         'forward': [1, 1, 1, 1],
@@ -95,6 +104,12 @@ def robot_forward():
 
 def robot_backward():
     return build_command('backward', 'backward')
+
+def robot_forward_scan():
+    return build_command('forward', 'forward_scan')
+
+def robot_backward_scan():
+    return build_command('backward', 'backward_scan')
 
 def robot_turn_left():
     return build_command('left', 'left')
@@ -248,73 +263,73 @@ if __name__ == '__main__':
     send_command(command)
     logging(command)
 
-    # test servo square
+    # # test servo square
     # print('test servo square')
     # test_servo_square()
 
-    # LANGKAH KE-3
-    # setting sudut awal ke posisi scan dengan iterasi sebesar 1 derajat
-    servo_angle_1 = config['servo_angle'][1]
-    servo_angle_2 = config['servo_angle'][2]
+    # # LANGKAH KE-3
+    # # setting sudut awal ke posisi scan dengan iterasi sebesar 1 derajat
+    # servo_angle_1 = config['servo_angle'][1]
+    # servo_angle_2 = config['servo_angle'][2]
 
-    x_cam = config['x_cam_on_scanning']
-    y_cam = config['y_cam_on_scanning']
-    z_cam = config['z_cam_on_scanning']
+    # x_cam = config['x_cam_on_scanning']
+    # y_cam = config['y_cam_on_scanning']
+    # z_cam = config['z_cam_on_scanning']
 
-    command = servo_move_to_axes(x_cam, y_cam)
+    # command = servo_move_to_axes(x_cam, y_cam)
     
-    last_servo_angle = command.split('.')
-    last_servo_angle_1 = int(last_servo_angle[1])
-    last_servo_angle_2 = int(last_servo_angle[2])
+    # last_servo_angle = command.split('.')
+    # last_servo_angle_1 = int(last_servo_angle[1])
+    # last_servo_angle_2 = int(last_servo_angle[2])
 
-    while True:
-        if servo_angle_1 <= last_servo_angle_1:
-            servo_angle_1 += 1
+    # while True:
+    #     if servo_angle_1 <= last_servo_angle_1:
+    #         servo_angle_1 += 1
 
-        if servo_angle_1 >= last_servo_angle_1:
-            servo_angle_1 -= 1
+    #     if servo_angle_1 >= last_servo_angle_1:
+    #         servo_angle_1 -= 1
 
-        if servo_angle_2 <= last_servo_angle_2:
-            servo_angle_2 += 1
+    #     if servo_angle_2 <= last_servo_angle_2:
+    #         servo_angle_2 += 1
 
-        if servo_angle_2 >= last_servo_angle_2:
-            servo_angle_2 -= 1
+    #     if servo_angle_2 >= last_servo_angle_2:
+    #         servo_angle_2 -= 1
 
-        command = servo_move_by_angle(servo_angle_1, servo_angle_2)
-        send_command(command)
+    #     command = servo_move_by_angle(servo_angle_1, servo_angle_2)
+    #     send_command(command)
 
-        time.sleep(0.3)
+    #     time.sleep(0.3)
 
-        if servo_angle_1 == last_servo_angle_1 and servo_angle_2 == last_servo_angle_2:
-            break
+    #     if servo_angle_1 == last_servo_angle_1 and servo_angle_2 == last_servo_angle_2:
+    #         break
 
-    # LANGKAH KE-4
-    # membuka koneksi kamera
-    connect_camera()
-    time.sleep(2)
+    # # LANGKAH KE-4
+    # # membuka koneksi kamera
+    # connect_camera()
+    # time.sleep(2)
 
-    # LANGKAH KE-5
-    # logic membuang sampah
-    # logic dilakukan dengan cara melakukan iterasi terhadap sampah yang dimasukkan ke config['trashes']
-    # untuk tiap sampah, dilakukan proses scan, centering trash, pick up trash, throw trash
-    for i, trash in enumerate(config['trashes']):
-        history = []
-        print('SAMPAH ke-', i+1, trash)
+    # # LANGKAH KE-5
+    # # logic membuang sampah
+    # # logic dilakukan dengan cara melakukan iterasi terhadap sampah yang dimasukkan ke config['trashes']
+    # # untuk tiap sampah, dilakukan proses scan, centering trash, pick up trash, throw trash
+    # for i, trash in enumerate(config['trashes']):
+    #     history = []
+    #     print('SAMPAH ke-', i+1, trash)
 
-        command = robot_stop()
-        send_command(command)
-        logging(command, False)
+    #     command = robot_stop()
+    #     send_command(command)
+    #     logging(command, False)
 
-        state = 'scan'
-        area = 0
-        forward = 0
-        backward = 0
+    #     state = 'scan'
+    #     area = 0
+    #     forward = 0
+    #     backward = 0
 
-        command = servo_move_to_axes(x_cam, z_cam)
-        send_command(command)
-        logging(command, False)
+    #     command = servo_move_to_axes(x_cam, z_cam)
+    #     send_command(command)
+    #     logging(command, False)
 
-        # proses scanning sampah
-        print('    scanning')
-        while True:
-            break
+    #     # proses scanning sampah
+    #     print('    scanning')
+    #     while True:
+    #         break
