@@ -22,8 +22,8 @@ config = {
     'lenght_arm_2': 45,
     'x_treshold': 5,
     'y_treshold': 5,
-    'x_cam_on_scanning': 20,
-    'y_cam_on_scanning': 55,
+    'x_cam_on_scanning': 45,
+    'y_cam_on_scanning': 30,
     'z_cam_on_scanning': 0,
     'COM': 'COM4',
     'BAUDRATE': 115200,
@@ -249,7 +249,7 @@ if __name__ == '__main__':
     time.sleep(2)
 
     # LANGKAH KE-2
-    # robot maju mendekati meja
+    # robot mendekati meja
     for _ in range(int(config['table_approaching_time'])):
         command = robot_turn_left()
         send_command(command)
@@ -267,69 +267,132 @@ if __name__ == '__main__':
     # print('test servo square')
     # test_servo_square()
 
-    # # LANGKAH KE-3
-    # # setting sudut awal ke posisi scan dengan iterasi sebesar 1 derajat
-    # servo_angle_1 = config['servo_angle'][1]
-    # servo_angle_2 = config['servo_angle'][2]
+    # LANGKAH KE-3
+    # setting sudut awal ke posisi scan dengan iterasi sebesar 1 derajat
+    servo_angle_1 = config['servo_angle'][1]
+    servo_angle_2 = config['servo_angle'][2]
 
-    # x_cam = config['x_cam_on_scanning']
-    # y_cam = config['y_cam_on_scanning']
-    # z_cam = config['z_cam_on_scanning']
+    x_cam = config['x_cam_on_scanning']
+    y_cam = config['y_cam_on_scanning']
+    z_cam = config['z_cam_on_scanning']
 
-    # command = servo_move_to_axes(x_cam, y_cam)
+    command = servo_move_to_axes(x_cam, y_cam)
     
-    # last_servo_angle = command.split('.')
-    # last_servo_angle_1 = int(last_servo_angle[1])
-    # last_servo_angle_2 = int(last_servo_angle[2])
+    last_servo_angle = command.split('.')
+    last_servo_angle_1 = int(last_servo_angle[1])
+    last_servo_angle_2 = int(last_servo_angle[2])
 
-    # while True:
-    #     if servo_angle_1 <= last_servo_angle_1:
-    #         servo_angle_1 += 1
+    while True:
+        if servo_angle_1 < last_servo_angle_1:
+            servo_angle_1 += 1
 
-    #     if servo_angle_1 >= last_servo_angle_1:
-    #         servo_angle_1 -= 1
+        if servo_angle_1 > last_servo_angle_1:
+            servo_angle_1 -= 1
 
-    #     if servo_angle_2 <= last_servo_angle_2:
-    #         servo_angle_2 += 1
+        if servo_angle_2 < last_servo_angle_2:
+            servo_angle_2 += 1
 
-    #     if servo_angle_2 >= last_servo_angle_2:
-    #         servo_angle_2 -= 1
+        if servo_angle_2 > last_servo_angle_2:
+            servo_angle_2 -= 1
 
-    #     command = servo_move_by_angle(servo_angle_1, servo_angle_2)
-    #     send_command(command)
+        command = servo_move_by_angle(servo_angle_1, servo_angle_2)
+        config['servo_angle'][1] = servo_angle_1
+        config['servo_angle'][2] = servo_angle_2
+        send_command(command)
 
-    #     time.sleep(0.3)
+        time.sleep(0.3)
 
-    #     if servo_angle_1 == last_servo_angle_1 and servo_angle_2 == last_servo_angle_2:
-    #         break
+        if servo_angle_1 == last_servo_angle_1 and servo_angle_2 == last_servo_angle_2:
+            break
 
-    # # LANGKAH KE-4
-    # # membuka koneksi kamera
-    # connect_camera()
-    # time.sleep(2)
+    # LANGKAH KE-4
+    # membuka koneksi ke kamera
+    print('\n     CONNECT CAMERA')
+    connect_camera()
+    time.sleep(2)
 
-    # # LANGKAH KE-5
-    # # logic membuang sampah
-    # # logic dilakukan dengan cara melakukan iterasi terhadap sampah yang dimasukkan ke config['trashes']
-    # # untuk tiap sampah, dilakukan proses scan, centering trash, pick up trash, throw trash
-    # for i, trash in enumerate(config['trashes']):
-    #     history = []
-    #     print('SAMPAH ke-', i+1, trash)
+    # LANGKAH KE-5
+    # logic membuang sampah
+    # logic dilakukan dengan cara melakukan iterasi terhadap sampah yang dimasukkan ke config['trashes']
+    # untuk tiap sampah, dilakukan proses scan, centering trash, pick up trash, throw trash
+    for i, trash in enumerate(config['trashes']):
+        history = []
+        print('SAMPAH ke-', i+1, trash)
 
-    #     command = robot_stop()
-    #     send_command(command)
-    #     logging(command, False)
+        command = robot_stop()
+        send_command(command)
+        logging(command, False)
 
-    #     state = 'scan'
-    #     area = 0
-    #     forward = 0
-    #     backward = 0
+        state = 'scan'
+        area = 0
+        forward = 0
+        backward = 0
 
-    #     command = servo_move_to_axes(x_cam, z_cam)
-    #     send_command(command)
-    #     logging(command, False)
+        command = servo_move_to_axes(x_cam, y_cam)
+        send_command(command)
+        logging(command, False)
 
-    #     # proses scanning sampah
-    #     print('    scanning')
-    #     while True:
-    #         break
+        # proses centering sampah
+        print('\n     CENTERING')
+        start_time = time.time()
+        while True:
+            _, img = cap.read()
+            results = model(img, stream=True, verbose=False)
+
+            for r in results:
+                for box in r.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+                    cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+
+                    org = [x1, y1]
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    fontScale = 1
+                    color = (255, 0, 0)
+                    thickness = 2
+
+                    cls = int(box.cls[0])
+
+                    if trash == classNames[cls]:
+                        cv2.putText(img, classNames[cls], org, font, fontScale, color, thickness)
+
+                        x_mid, y_mid = (x1 + x2) // 2, (y1 + y2) // 2
+                        width, height = x2 - x1, y2 - y1
+
+                        # x_mid bagi kamera = z motor
+                        # y_mid bagi kamera = x servo
+
+                        print(x_mid, y_mid, x_mid - 320, ', width:', width, ', height:', height)
+
+                        current_time = time.time()
+
+                        if current_time - start_time >= 1:
+                            print('aa')
+                            if x_mid - 320 >= 10:
+                                command = robot_backward_scan()
+                                send_command(command)
+                            elif x_mid - 320 <= -10:
+                                command = robot_forward_scan()
+                                send_command(command)
+                            else:
+                                command = robot_stop()
+                                send_command(command)
+                            
+                            start_time = current_time
+
+                # # proses logging di frame
+                # text = config['state'] 
+                # org = (20, 20)
+                # font = cv2.FONT_HERSHEY_SIMPLEX
+                # fontScale = 1
+                # color = (255, 0, 0)
+                # thickness = 2
+                # cv2.putText(img, text, org, font, fontScale, color, thickness)
+
+            # escape dari proses
+            cv2.imshow('Webcam', img)
+            if cv2.waitKey(1) == ord('q'):
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
